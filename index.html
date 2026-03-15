@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>塔RPG Ver9</title>
+<title>塔RPG 完全版</title>
 
 <style>
 body{
@@ -60,7 +60,7 @@ border-radius:8px;
 
 <div class="game">
 
-<h2>🏯塔RPG Ver9</h2>
+<h2>🏯塔RPG</h2>
 
 <h3 id="enemy"></h3>
 
@@ -86,13 +86,15 @@ border-radius:8px;
 
 <div>💰 <span id="gold"></span></div>
 
-<button onclick="playerAttack()">⚔攻撃</button> <button onclick="toggleAuto()">🤖オート</button> <button onclick="next()">⬆次の階</button>
+<button onclick="playerAttack()">⚔攻撃</button> <button onclick="toggleAuto()">🤖オート</button>
+
+<div id="skills"></div>
 
 <hr>
 
 <h3>🎒装備</h3>
 
-<button onclick="combine()">🔨装備合成</button>
+<button onclick="combine()">🔨合成</button>
 
 <div id="inventory"></div>
 
@@ -133,7 +135,6 @@ let enemyHP=0
 let enemyMax=0
 
 let auto=false
-let nextFloor=false
 
 let inventory=[]
 
@@ -183,9 +184,11 @@ exp+=5
 
 dropItem()
 
-nextFloor=true
-
 log("敵撃破")
+
+setTimeout(()=>{
+next()
+},200)
 
 }
 
@@ -200,7 +203,6 @@ function enemyAttack(){
 if(enemyHP<=0)return
 
 let dmg=5+floor-defense
-
 if(dmg<1)dmg=1
 
 playerHP-=dmg
@@ -232,6 +234,68 @@ playerMP=playerMaxMP
 log("✨Lv"+level)
 
 }
+
+}
+
+let skills=[
+
+{name:"🔥ファイア",cost:20,action(){
+if(playerMP<20)return
+playerMP-=20
+enemyHP-=attack*3
+log("🔥ファイア")
+}},
+
+{name:"❄アイス",cost:15,action(){
+if(playerMP<15)return
+playerMP-=15
+enemyHP-=attack*2
+log("❄アイス")
+}},
+
+{name:"⚡サンダー",cost:25,action(){
+if(playerMP<25)return
+playerMP-=25
+enemyHP-=attack*2.5
+log("⚡サンダー")
+}},
+
+{name:"💖ヒール",cost:15,action(){
+if(playerMP<15)return
+playerMP-=15
+playerHP+=30
+if(playerHP>playerMax)playerHP=playerMax
+log("💖回復")
+}},
+
+{name:"🛡バリア",cost:20,action(){
+if(playerMP<20)return
+playerMP-=20
+defense+=5
+setTimeout(()=>defense-=5,5000)
+log("🛡防御UP")
+}}
+
+]
+
+function drawSkills(){
+
+let html=""
+
+skills.forEach((s,i)=>{
+html+=`<button onclick="useSkill(${i})">${s.name}</button>`
+})
+
+document.getElementById("skills").innerHTML=html
+}
+
+function useSkill(i){
+
+skills[i].action()
+
+enemyAttack()
+
+update()
 
 }
 
@@ -337,11 +401,8 @@ function combine(){
 let groups={}
 
 inventory.forEach((i,index)=>{
-
 if(!groups[i.rarity])groups[i.rarity]=[]
-
 groups[i.rarity].push(index)
-
 })
 
 for(let r in groups){
@@ -352,17 +413,14 @@ let a=groups[r].slice(0,3)
 
 a.reverse().forEach(i=>inventory.splice(i,1))
 
-let nextRarityIndex=rarity.indexOf(r)+1
-
-if(nextRarityIndex>=rarity.length)nextRarityIndex=rarity.length-1
-
-let newRarity=rarity[nextRarityIndex]
+let nextIndex=rarity.indexOf(r)+1
+if(nextIndex>=rarity.length)nextIndex=rarity.length-1
 
 inventory.push({
 atk:10,
 def:5,
 mp:5,
-rarity:newRarity,
+rarity:rarity[nextIndex],
 level:1
 })
 
@@ -391,10 +449,7 @@ if(playerHP>playerMax)playerHP=playerMax
 
 function next(){
 
-if(!nextFloor)return
-
 floor++
-nextFloor=false
 
 spawnEnemy()
 
@@ -403,19 +458,12 @@ update()
 }
 
 function toggleAuto(){
-
 auto=!auto
-
 }
 
 function autoBattle(){
 
 if(!auto)return
-
-if(nextFloor){
-next()
-return
-}
 
 playerAttack()
 
@@ -453,6 +501,7 @@ document.getElementById("enemybar").style.width=(enemyHP/enemyMax*100)+"%"
 }
 
 spawnEnemy()
+drawSkills()
 drawInventory()
 update()
 
